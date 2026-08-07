@@ -44,7 +44,9 @@ example (x : ℝ) : x ≤ x :=
 
 -- Try this.
 example (h₀ : a ≤ b) (h₁ : b < c) (h₂ : c ≤ d) (h₃ : d < e) : a < e := by
-  sorry
+  apply lt_trans
+  · exact lt_of_le_of_lt h₀ h₁
+  · exact lt_of_le_of_lt h₂ h₃
 
 example (h₀ : a ≤ b) (h₁ : b < c) (h₂ : c ≤ d) (h₃ : d < e) : a < e := by
   linarith
@@ -86,21 +88,33 @@ example (h₀ : a ≤ b) (h₁ : c < d) : a + exp c + e < b + exp d + e := by
     apply exp_lt_exp.mpr h₁
   apply le_refl
 
-example (h₀ : d ≤ e) : c + exp (a + d) ≤ c + exp (a + e) := by sorry
+example (h₀ : d ≤ e) : c + exp (a + d) ≤ c + exp (a + e) := by
+  apply add_le_add_right
+  apply exp_le_exp.mpr
+  exact add_le_add_right h₀ a
 
 example : (0 : ℝ) < 1 := by norm_num
 
 example (h : a ≤ b) : log (1 + exp a) ≤ log (1 + exp b) := by
-  have h₀ : 0 < 1 + exp a := by sorry
+  have h₀ : 0 < 1 + exp a := by
+    apply add_pos
+    · norm_num
+    · apply exp_pos
   apply log_le_log h₀
-  sorry
+  apply add_le_add_right
+  exact exp_le_exp.mpr h
 
 example : 0 ≤ a ^ 2 := by
   -- apply?
   exact sq_nonneg a
 
 example (h : a ≤ b) : c - exp b ≤ c - exp a := by
-  sorry
+  refine sub_le_sub_left ?_ c
+  exact exp_le_exp.mpr h
+
+example (h : a ≤ b) : c - exp b ≤ c - exp a := by
+  have := exp_le_exp.mpr h
+  linarith
 
 example : 2*a*b ≤ a^2 + b^2 := by
   have h : 0 ≤ a^2 - 2*a*b + b^2
@@ -110,7 +124,7 @@ example : 2*a*b ≤ a^2 + b^2 := by
 
   calc
     2*a*b = 2*a*b + 0 := by ring
-    _ ≤ 2*a*b + (a^2 - 2*a*b + b^2) := add_le_add (le_refl _) h
+    _ ≤ 2*a*b + (a^2 - 2*a*b + b^2) := add_le_add_right h _
     _ = a^2 + b^2 := by ring
 
 example : 2*a*b ≤ a^2 + b^2 := by
@@ -121,7 +135,17 @@ example : 2*a*b ≤ a^2 + b^2 := by
   linarith
 
 example : |a*b| ≤ (a^2 + b^2)/2 := by
-  sorry
+  apply abs_le'.mpr
+  constructor
+  · have h : 0 ≤ a^2 - 2*a*b + b^2
+    calc  a^2 - 2*a*b + b^2
+      _ = (a - b)^2 := by ring
+      _ ≥ 0 := by apply sq_nonneg
+    linarith
+  · have h : 0 ≤ a^2 + 2*a*b + b^2
+    calc  a^2 + 2*a*b + b^2
+      _ = (a + b)^2 := by ring
+      _ ≥ 0 := by apply sq_nonneg
+    linarith
 
 #check abs_le'.mpr
-
