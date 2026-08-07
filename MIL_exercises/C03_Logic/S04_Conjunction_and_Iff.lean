@@ -63,8 +63,71 @@ example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x := by
 example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x :=
   fun h' ↦ h.right (le_antisymm h.left h')
 
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  rcases h with ⟨h₀, h₁⟩
+  constructor
+  · assumption
+  intro h'
+  apply h₁
+  exact dvd_antisymm h₀ h'
+
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  rcases h with ⟨h₀, h₁⟩
+  constructor
+  · assumption
+  contrapose! h₁
+  exact dvd_antisymm h₀ h₁
+
+example {m n : ℕ} : m ∣ n ∧ m ≠ n → m ∣ n ∧ ¬n ∣ m := by
+  rintro ⟨h₀, h₁⟩
+  constructor
+  · assumption
+  intro h'
+  exact h₁ (dvd_antisymm h₀ h')
+
+example {m n : ℕ} : m ∣ n ∧ m ≠ n → m ∣ n ∧ ¬n ∣ m :=
+  fun ⟨h₀, h₁⟩ ↦ ⟨h₀, fun h' ↦ h₁ (dvd_antisymm h₀ h')⟩
+
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  have ⟨h₀, h₁⟩ := h
+  constructor
+  · assumption
+  contrapose! h₁
+  exact dvd_antisymm h₀ h₁
+
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  cases h
+  case intro h₀ h₁ =>
+    constructor
+    · assumption
+    contrapose! h₁
+    exact dvd_antisymm h₀ h₁
+
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  cases h
+  next h₀ h₁ =>
+    constructor
+    · assumption
+    contrapose! h₁
+    exact dvd_antisymm h₀ h₁
+
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  match h with
+  | ⟨h₀, h₁⟩ =>
+    constructor
+    · assumption
+    contrapose! h₁
+    exact dvd_antisymm h₀ h₁
+
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  constructor
+  · exact h.left
+  intro h'
+  apply h.right
+  exact dvd_antisymm h.left h'
+
 example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m :=
-  sorry
+  ⟨h.left, fun h' ↦ h.right (dvd_antisymm h.left h')⟩
 
 example : ∃ x : ℝ, 2 < x ∧ x < 4 :=
   ⟨5 / 2, by norm_num, by norm_num⟩
@@ -101,15 +164,31 @@ example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y := by
 example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y :=
   ⟨fun h₀ h₁ ↦ h₀ (by rw [h₁]), fun h₀ h₁ ↦ h₀ (le_antisymm h h₁)⟩
 
-example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y :=
-  sorry
+example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y := by
+  constructor
+  · rintro ⟨h₀, h₁⟩
+    constructor
+    · assumption
+    contrapose! h₁
+    rw [h₁]
+  · rintro ⟨h₀, h₁⟩
+    constructor
+    · assumption
+    contrapose! h₁
+    exact le_antisymm h₀ h₁
 
 theorem aux {x y : ℝ} (h : x ^ 2 + y ^ 2 = 0) : x = 0 :=
-  have h' : x ^ 2 = 0 := by sorry
+  have h' : x ^ 2 = 0 := by
+    linarith [sq_nonneg x, sq_nonneg y]
   eq_zero_of_pow_eq_zero h'
 
-example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 :=
-  sorry
+example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
+  constructor
+  · intro h
+    have h' : y ^ 2 + x ^ 2 = 0 := by rw [add_comm, h]
+    use aux h, aux h'
+  · rintro ⟨rfl, rfl⟩
+    norm_num
 
 section
 
@@ -126,11 +205,13 @@ end
 
 theorem not_monotone_iff {f : ℝ → ℝ} : ¬Monotone f ↔ ∃ x y, x ≤ y ∧ f x > f y := by
   rw [Monotone]
-  push_neg
+  push Not
   rfl
 
 example : ¬Monotone fun x : ℝ ↦ -x := by
-  sorry
+  rw [not_monotone_iff]
+  use 0, 1
+  norm_num
 
 section
 variable {α : Type*} [PartialOrder α]
@@ -138,7 +219,17 @@ variable (a b : α)
 
 example : a < b ↔ a ≤ b ∧ a ≠ b := by
   rw [lt_iff_le_not_ge]
-  sorry
+  constructor
+  · intro ⟨h₀, h₁⟩
+    constructor
+    · assumption
+    contrapose! h₁
+    rw [h₁]
+  · intro ⟨h₀, h₁⟩
+    constructor
+    · assumption
+    contrapose! h₁
+    exact le_antisymm h₀ h₁
 
 end
 
@@ -148,10 +239,17 @@ variable (a b c : α)
 
 example : ¬a < a := by
   rw [lt_iff_le_not_ge]
-  sorry
+  push Not
+  intro
+  assumption
 
 example : a < b → b < c → a < c := by
   simp only [lt_iff_le_not_ge]
-  sorry
+  rintro ⟨hab, hba⟩ ⟨hbc, hcb⟩
+  constructor
+  · exact le_trans hab hbc
+  intro hca
+  apply hcb
+  exact le_trans hca hab
 
 end
