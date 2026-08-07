@@ -28,10 +28,11 @@ theorem sb_right_inv {x : α} (hx : x ∉ sbSet f g) : g (invFun g x) = x := by
     rw [sbSet, mem_iUnion]
     use 0
     rw [sbAux, mem_diff]
-    sorry
+    exact ⟨mem_univ _, hx⟩
   have : ∃ y, g y = x := by
-    sorry
-  sorry
+    simp at this
+    assumption
+  exact invFun_eq this
 
 theorem sb_injective (hf : Injective f) : Injective (sbFun f g) := by
   set A := sbSet f g with A_def
@@ -42,22 +43,24 @@ theorem sb_injective (hf : Injective f) : Injective (sbFun f g) := by
   by_cases xA : x₁ ∈ A ∨ x₂ ∈ A
   · wlog x₁A : x₁ ∈ A generalizing x₁ x₂ hxeq xA
     · symm
-      apply this hxeq.symm xA.symm (xA.resolve_left x₁A)
+      exact this hxeq.symm xA.symm (xA.resolve_left x₁A)
     have x₂A : x₂ ∈ A := by
-      apply _root_.not_imp_self.mp
+      apply not_imp_self.mp
       intro (x₂nA : x₂ ∉ A)
       rw [if_pos x₁A, if_neg x₂nA] at hxeq
-      rw [A_def, sbSet, mem_iUnion] at x₁A
       have x₂eq : x₂ = g (f x₁) := by
-        sorry
-      rcases x₁A with ⟨n, hn⟩
+        rw [hxeq, sb_right_inv _ _ x₂nA]
+      rw [A_def, sbSet, mem_iUnion] at x₁A
+      rcases x₁A with ⟨n, x₁Sₙ⟩
       rw [A_def, sbSet, mem_iUnion]
       use n + 1
       simp [sbAux]
-      exact ⟨x₁, hn, x₂eq.symm⟩
-    sorry
-  push_neg at xA
-  sorry
+      exact ⟨x₁, x₁Sₙ, x₂eq.symm⟩
+    rw [if_pos x₁A, if_pos x₂A] at hxeq
+    exact hf hxeq
+  push Not at xA
+  rw [if_neg xA.left, if_neg xA.right] at hxeq
+  rw [← sb_right_inv _ _ xA.left, hxeq, sb_right_inv _ _ xA.right]
 
 theorem sb_surjective (hg : Injective g) : Surjective (sbFun f g) := by
   set A := sbSet f g with A_def
@@ -65,19 +68,21 @@ theorem sb_surjective (hg : Injective g) : Surjective (sbFun f g) := by
   intro y
   by_cases gyA : g y ∈ A
   · rw [A_def, sbSet, mem_iUnion] at gyA
-    rcases gyA with ⟨n, hn⟩
-    rcases n with _ | n
-    · simp [sbAux] at hn
-    simp [sbAux] at hn
-    rcases hn with ⟨x, xmem, hx⟩
+    rcases gyA with ⟨n, gySₙ⟩
+    rcases n with _ | m
+    · simp [sbAux] at gySₙ
+    simp [sbAux] at gySₙ
+    rcases gySₙ with ⟨x, xSₘ, hx⟩
     use x
     have : x ∈ A := by
       rw [A_def, sbSet, mem_iUnion]
-      exact ⟨n, xmem⟩
+      exact ⟨m, xSₘ⟩
     rw [h_def, sbFun, if_pos this]
     apply hg hx
 
-  sorry
+  use g y
+  rw [h_def, sbFun, if_neg gyA]
+  apply leftInverse_invFun hg
 
 end
 
