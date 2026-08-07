@@ -218,11 +218,7 @@ theorem neg_zero : (-0 : R) = 0 := by
 
 theorem neg_neg (a : R) : - -a = a := by
   apply neg_eq_of_add_eq_zero
-  calc  -a + a
-    _ = -a + (a + 0) := by
-      rw [add_zero]
-    _ = 0 := by
-      rw [neg_add_cancel_left]
+  rw [neg_add_cancel]
 
 end MyRing
 
@@ -320,11 +316,7 @@ theorem inv_one : (1⁻¹ : G) = 1 := by
 
 theorem inv_inv (a : G) : a⁻¹⁻¹ = a := by
   apply inv_eq_of_mul_eq_one
-  calc  a⁻¹ * a
-    _ = a⁻¹ * (a * 1) := by
-      rw [mul_one]
-    _ = 1 := by
-      rw [inv_mul_cancel_left]
+  rw [inv_mul_cancel]
 
 theorem mul_inv_rev (a b : G) : (a * b)⁻¹ = b⁻¹ * a⁻¹ := by
   apply inv_eq_of_mul_eq_one
