@@ -46,9 +46,15 @@ theorem dvd_fac {i n : ℕ} (ipos : 0 < i) (ile : i ≤ n) : i ∣ fac n := by
   apply dvd_mul_right
 
 theorem pow_two_le_fac (n : ℕ) : 2 ^ (n - 1) ≤ fac n := by
-  rcases n with _ | n
+  rcases n with _ | m
   · simp [fac]
-  sorry
+  simp
+  induction' m with l ih
+  · simp [fac]
+  rw [pow_succ', fac]
+  apply Nat.mul_le_mul _ ih
+  exact Nat.le_add_left 2 l
+
 section
 
 variable {α : Type*} (s : Finset ℕ) (f : ℕ → ℕ) (n : ℕ)
@@ -99,7 +105,12 @@ theorem sum_id (n : ℕ) : ∑ i ∈ range (n + 1), i = n * (n + 1) / 2 := by
   ring
 
 theorem sum_sqr (n : ℕ) : ∑ i ∈ range (n + 1), i ^ 2 = n * (n + 1) * (2 * n + 1) / 6 := by
-  sorry
+  symm; apply Nat.div_eq_of_eq_mul_right (by norm_num : 0 < 6)
+  induction' n with m ih
+  · simp
+  rw [Finset.sum_range_succ, mul_add 6, ← ih]
+  ring
+
 end
 
 inductive MyNat where
@@ -117,30 +128,48 @@ def mul : MyNat → MyNat → MyNat
   | x, succ y => add (mul x y) x
 
 theorem zero_add (n : MyNat) : add zero n = n := by
-  induction' n with n ih
+  induction' n with n' ih
   · rfl
   rw [add, ih]
 
 theorem succ_add (m n : MyNat) : add (succ m) n = succ (add m n) := by
-  induction' n with n ih
+  induction' n with n' ih
   · rfl
   rw [add, ih]
   rfl
 
 theorem add_comm (m n : MyNat) : add m n = add n m := by
-  induction' n with n ih
+  induction' n with n' ih
   · rw [zero_add]
     rfl
   rw [add, succ_add, ih]
 
 theorem add_assoc (m n k : MyNat) : add (add m n) k = add m (add n k) := by
-  sorry
+  induction' k with k' ih
+  · rfl
+  rw [add, ih]
+  rfl
+
 theorem mul_add (m n k : MyNat) : mul m (add n k) = add (mul m n) (mul m k) := by
-  sorry
+  induction' k with k' ih
+  · rfl
+  rw [add, mul, ih, add_assoc]
+  rfl
+
 theorem zero_mul (n : MyNat) : mul zero n = zero := by
-  sorry
+  induction' n with n' ih
+  · rfl
+  rw [mul, ih]
+  rfl
+
 theorem succ_mul (m n : MyNat) : mul (succ m) n = add (mul m n) n := by
-  sorry
+  induction' n with n' ih
+  · rfl
+  rw [mul, ih, add, mul, add, add_assoc, add_assoc, add_comm n']
+
 theorem mul_comm (m n : MyNat) : mul m n = mul n m := by
-  sorry
+  induction' n with n' ih
+  · rw [mul, zero_mul]
+  rw [mul, succ_mul, ih]
+
 end MyNat
