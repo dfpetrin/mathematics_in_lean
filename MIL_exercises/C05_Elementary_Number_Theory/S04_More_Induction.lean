@@ -72,6 +72,14 @@ theorem fib_coprime_fib_succ (n : ℕ) : Nat.Coprime (fib n) (fib (n + 1)) := by
 #eval fib 6
 #eval List.range 20 |>.map fib
 
+def phi_float : Float := (1 + .sqrt 5) / 2
+def phi_float' : Float := (1 - .sqrt 5) / 2
+
+def fib_fast (n : Nat) : Float := (phi_float^n.toFloat - phi_float'^n.toFloat) / .sqrt 5
+
+#eval fib_fast 6
+#eval List.range 20 |>.map fib_fast
+
 def fib' (n : Nat) : Nat :=
   aux n 0 1
 where aux
@@ -92,35 +100,36 @@ theorem fib'_eq_fib : fib' = fib := by
 theorem fib_add (m n : ℕ) : fib (m + n + 1) = fib m * fib n + fib (m + 1) * fib (n + 1) := by
   induction n generalizing m with
   | zero => simp
-  | succ n ih =>
+  | succ n' ih =>
     specialize ih (m + 1)
-    rw [add_assoc m 1 n, add_comm 1 n] at ih
-    simp only [fib_add_two, ih]
+    rw [add_assoc m, add_comm 1] at ih
+    rw [ih]
+    simp
     ring
 
 theorem fib_add' : ∀ m n, fib (m + n + 1) = fib m * fib n + fib (m + 1) * fib (n + 1)
-  | _, 0     => by simp
-  | m, n + 1 => by
-    have := fib_add' (m + 1) n
-    rw [add_assoc m 1 n, add_comm 1 n] at this
-    simp only [fib_add_two, this]
+  | _, 0 => by simp
+  | m, n'+1 => by
+    have ih := fib_add' (m + 1) n'
+    rw [add_assoc m, add_comm 1] at ih
+    rw [ih]
+    simp
     ring
 
 example (n : ℕ): (fib n) ^ 2 + (fib (n + 1)) ^ 2 = fib (2 * n + 1) := by
-  sorry
+  rw [two_mul, fib_add, pow_two, pow_two]
+
 #check (@Nat.not_prime_iff_exists_dvd_lt :
   ∀ {n : ℕ}, 2 ≤ n → (¬Nat.Prime n ↔ ∃ m, m ∣ n ∧ 2 ≤ m ∧ m < n))
 
 theorem ne_one_iff_exists_prime_dvd : ∀ {n}, n ≠ 1 ↔ ∃ p : ℕ, p.Prime ∧ p ∣ n
   | 0 => by simpa using Exists.intro 2 Nat.prime_two
-  | 1 => by simp [Nat.not_prime_one]
+  | 1 => by simpa using Nat.not_prime_one
   | n + 2 => by
-    have hn : n + 2 ≠ 1 := by omega
-    simp only [Ne, not_false_iff, true_iff, hn]
+    simp
     by_cases h : Nat.Prime (n + 2)
-    · use n + 2, h
-    · have : 2 ≤ n + 2 := by omega
-      rw [Nat.not_prime_iff_exists_dvd_lt this] at h
+    · use n + 2
+    · rw [Nat.not_prime_iff_exists_dvd_lt (by omega)] at h
       rcases h with ⟨m, mdvdn, mge2, -⟩
       have : m ≠ 1 := by omega
       rw [ne_one_iff_exists_prime_dvd] at this
@@ -134,4 +143,3 @@ theorem zero_lt_of_mul_eq_one (m n : ℕ) : n * m = 1 → 0 < n ∧ 0 < m := by
 example (m n : ℕ) : n*m = 1 → 0 < n ∧ 0 < m := by
   rcases m with (_ | m); simp
   rcases n with (_ | n) <;> simp
-
