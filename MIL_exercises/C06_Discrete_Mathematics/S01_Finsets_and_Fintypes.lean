@@ -26,6 +26,162 @@ example : a ∩ (b ∪ c) = (a ∩ b) ∪ (a ∩ c) := by
 
 example : a ∩ (b ∪ c) = (a ∩ b) ∪ (a ∩ c) := by rw [inter_union_distrib_left]
 
+example : a ∩ (b ∪ c) = a ∩ b ∪ a ∩ c := inter_union_distrib_left ..
+
+section
+variable {α β : Type*} [DecidableEq α] (s t u : Finset α)
+
+example (h : s ⊆ t) : s ∩ u ⊆ t ∩ u := by
+  intro x
+  rw [mem_inter, mem_inter]
+  rintro ⟨xs, xu⟩
+  exact ⟨h xs, xu⟩
+
+example (h : s ⊆ t) : s ∩ u ⊆ t ∩ u := by
+  simp only [subset_iff, mem_inter]
+  rintro x ⟨xs, xu⟩
+  exact ⟨h xs, xu⟩
+
+example (h : s ⊆ t) : s ∩ u ⊆ t ∩ u := by
+  intro x xsu
+  simp only [mem_inter] at *
+  exact ⟨h xsu.1, xsu.2⟩
+
+example : s ∩ (t ∪ u) ⊆ s ∩ t ∪ s ∩ u := by
+  intro x hx
+  simp only [mem_inter] at hx
+  have xs : x ∈ s := hx.1
+  have xtu : x ∈ t ∪ u := hx.2
+  simp only [mem_union] at *
+  rcases xtu with xt | xu
+  · left
+    show x ∈ s ∩ t
+    simp only [mem_inter]
+    exact ⟨xs, xt⟩
+  · right
+    show x ∈ s ∩ u
+    simp only [mem_inter]
+    exact ⟨xs, xu⟩
+
+example : s ∩ (t ∪ u) ⊆ s ∩ t ∪ s ∩ u := by
+  simp only [subset_iff, mem_inter, mem_union]
+  rintro x ⟨xs, xt | xu⟩
+  · left; exact ⟨xs, xt⟩
+  · right; exact ⟨xs, xu⟩
+
+example : s ∩ t ∪ s ∩ u ⊆ s ∩ (t ∪ u) := by
+  intro x
+  simp only [mem_inter, mem_union]
+  rintro (⟨xs, xt⟩ | ⟨xs, xu⟩)
+  · exact ⟨xs, Or.inl xt⟩
+  · exact ⟨xs, Or.inr xu⟩
+
+example : (s \ t) \ u ⊆ s \ (t ∪ u) := by
+  intro x xstu
+  simp only [mem_sdiff] at *
+  have xs : x ∈ s := xstu.1.1
+  have xnt : x ∉ t := xstu.1.2
+  have xnu : x ∉ u := xstu.2
+  constructor
+  · exact xs
+  simp only [mem_union]
+  intro xtu
+  rcases xtu with xt | xu
+  · show False; exact xnt xt
+  · show False; exact xnu xu
+
+example : (s \ t) \ u ⊆ s \ (t ∪ u) := by
+  simp only [subset_iff, mem_sdiff, mem_union]
+  rintro x ⟨⟨xs, xnt⟩, xnu⟩
+  use xs
+  rintro (xt | xu) <;> contradiction
+
+example : s \ (t ∪ u) ⊆ (s \ t) \ u := by
+  simp only [subset_iff, mem_sdiff, mem_union]
+  rintro x ⟨xs, xntu⟩
+  refine ⟨⟨xs, ?xnt⟩, ?xnu⟩
+  · intro xt; exact xntu <| Or.inl xt
+  · intro xu; exact xntu <| Or.inr xu
+
+example : s ∩ t = t ∩ s := by
+  ext x
+  simp only [mem_inter]
+  constructor
+  · rintro ⟨xs, xt⟩; exact ⟨xt, xs⟩
+  · rintro ⟨xt, xs⟩; exact ⟨xs, xt⟩
+
+example : s ∩ t = t ∩ s := by ext x; simp [and_comm]
+
+example : s ∩ t = t ∩ s := by
+  apply Subset.antisymm <;> simp only [subset_iff, mem_inter]
+  · rintro x ⟨xs, xt⟩; exact ⟨xt, xs⟩
+  · rintro x ⟨xt, xs⟩; exact ⟨xs, xt⟩
+
+example : s ∩ t = t ∩ s :=
+  Subset.antisymm
+    (fun _x xst ↦ mem_inter.mpr ⟨(mem_inter.mp xst).2, (mem_inter.mp xst).1⟩)
+    (fun _x xts ↦ mem_inter.mpr ⟨(mem_inter.mp xts).2, (mem_inter.mp xts).1⟩)
+
+example : s ∩ (s ∪ t) = s := by
+  ext x
+  simp only [mem_inter, mem_union]
+  tauto
+
+example : s ∩ (s ∪ t) = s := by simp
+
+example : s ∪ s ∩ t = s := by
+  ext x
+  simp only [mem_inter, mem_union]
+  tauto
+
+example : s ∪ s ∩ t = s := by simp
+
+example : s \ t ∪ t = s ∪ t := by
+  ext x
+  simp only [mem_sdiff, mem_union]
+  constructor
+  · rintro (⟨xs, _⟩ | xt)
+    · left; exact xs
+    · right; exact xt
+  · rintro (xs | xt)
+    · by_cases xt : x ∈ t
+      · right; exact xt
+      · left; exact ⟨xs, xt⟩
+    · right; exact xt
+
+example : s \ t ∪ t = s ∪ t := by
+  ext x
+  simp only [mem_sdiff, mem_union]
+  tauto
+
+example : s \ t ∪ t = s ∪ t := by simp
+
+example : s \ t ∪ t \ s = (s ∪ t) \ (s ∩ t) := by
+  ext x
+  simp only [mem_sdiff, mem_inter, mem_union]
+  constructor
+  · rintro (⟨xs, xnt⟩ | ⟨xt, xns⟩)
+    · use Or.inl xs
+      rintro ⟨xs, xt⟩
+      contradiction
+    · use Or.inr xt
+      rintro ⟨xs, xt⟩
+      contradiction
+  · rintro ⟨xs | xt, xnst⟩
+    · left
+      use xs
+      intro xt
+      exact xnst ⟨xs, xt⟩
+    · right
+      use xt
+      intro xs
+      exact xnst ⟨xs, xt⟩
+
+example : s \ t ∪ t \ s = (s ∪ t) \ (s ∩ t) := by
+  ext x; simp; tauto
+
+end
+
 #check ({0, 2, 5} : Finset Nat)
 
 def example1 : Finset ℕ := {0, 1, 2}
