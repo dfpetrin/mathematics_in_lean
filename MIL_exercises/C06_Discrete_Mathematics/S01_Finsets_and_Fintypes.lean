@@ -1,7 +1,11 @@
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Algebra.Group.Nat.Even
+import Mathlib.Algebra.GroupWithZero.Basic
+import Mathlib.Algebra.GroupWithZero.Nat
+import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Powerset
-import Mathlib.Data.Finset.Max
-import Mathlib.Data.Nat.Prime.Basic
-import Mathlib.Data.Fintype.BigOperators
+import Mathlib.Data.Finset.Sort
+import Mathlib.Data.Fintype.Prod
 
 section
 variable {α : Type*} [DecidableEq α] (a : α) (s t : Finset α)
@@ -13,6 +17,7 @@ end
 
 open Finset
 
+section
 variable (a b c : Finset ℕ)
 variable (n : ℕ)
 
@@ -27,6 +32,8 @@ example : a ∩ (b ∪ c) = (a ∩ b) ∪ (a ∩ c) := by
 example : a ∩ (b ∪ c) = (a ∩ b) ∪ (a ∩ c) := by rw [inter_union_distrib_left]
 
 example : a ∩ (b ∪ c) = a ∩ b ∪ a ∩ c := inter_union_distrib_left ..
+
+end
 
 section
 variable {α β : Type*} [DecidableEq α] (s t u : Finset α)
@@ -188,11 +195,17 @@ def example1 : Finset ℕ := {0, 1, 2}
 
 example : ({0, 1, 2} : Finset ℕ) = {1, 2, 0} := by decide
 
+example : ({0, 1, 2} : Set ℕ) = {1, 2, 0} := by ext x; simp; tauto
+
 example : ({0, 1, 2} : Finset ℕ) = {0, 1, 1, 2} := by decide
+
+example : ({0, 1, 2} : Set ℕ) = {0, 1, 1, 2} := by simp
 
 example : ({0, 1} : Finset ℕ) = {1, 0} := by rw [Finset.pair_comm]
 
 example (x : Nat) : ({x, x} : Finset ℕ) = {x} := by simp
+
+example (x : Nat) : ({x, x} : Finset ℕ) = {x} := insert_eq_of_mem <| mem_singleton.mpr rfl
 
 example (x y z : Nat) : ({x, y, z, y, z, x} : Finset ℕ) = {x, y, z} := by
   ext i; simp [or_comm, or_left_comm]
@@ -206,15 +219,20 @@ example (s : Finset ℕ) (a : ℕ) (h : a ∉ s) : (insert a s |>.erase a) = s :
 example (s : Finset ℕ) (a : ℕ) (h : a ∈ s) : insert a (s.erase a) = s :=
   Finset.insert_erase h
 
+#eval insert 0 <| insert 1 <| (singleton 2 : Finset Nat)
+
 set_option pp.notation false in
 #check ({0, 1, 2} : Finset ℕ)
 
-example : {m ∈ range n | Even m} = (range n).filter Even := rfl
-example : {m ∈ range n | Even m ∧ m ≠ 3} = (range n).filter (fun m ↦ Even m ∧ m ≠ 3) := rfl
+example (n : ℕ) : {m ∈ range n | Even m} = (range n).filter Even := rfl
+example (n : ℕ) : {m ∈ range n | Even m ∧ m ≠ 3} = (range n).filter (fun m ↦ Even m ∧ m ≠ 3) := rfl
 
 example : {m ∈ range 10 | Even m} = {0, 2, 4, 6, 8} := by decide
 
 #check (range 5).image (fun x ↦ x * 2)
+
+#eval (range 5).image (fun x ↦ x * 2)
+#eval {x ∈ range 10 | Even x}
 
 example : (range 5).image (fun x ↦ x * 2) = {x ∈ range 10 | Even x} := by decide
 
@@ -244,11 +262,11 @@ end finsets_and_fintypes
 
 #check Finset.induction
 
-example {α : Type*} [DecidableEq α] (f : α → ℕ)  (s : Finset α) (h : ∀ x ∈ s, f x ≠ 0) :
+example {α : Type*} [DecidableEq α] (f : α → ℕ) (s : Finset α) (h : ∀ x ∈ s, f x ≠ 0) :
     ∏ x ∈ s, f x ≠ 0 := by
   induction s using Finset.induction_on with
   | empty => simp
-  | @insert a s anins ih =>
+  | insert a s anins ih =>
     rw [prod_insert anins]
     apply mul_ne_zero
     · apply h; apply mem_insert_self
@@ -273,14 +291,14 @@ example (s : Finset ℕ) (a : ℕ) : a ∈ s.toList ↔ a ∈ s := mem_toList
 #check Finset.sup
 #check Finset.sup'
 
-example : Finset.Nonempty {2, 6, 7} := ⟨6, by trivial⟩
-example : Finset.min' {2, 6, 7} ⟨6, by trivial⟩ = 2 := by trivial
+example : Finset.Nonempty {2, 6, 7} := ⟨6, by decide⟩
+example : Finset.min' {2, 6, 7} ⟨6, by decide⟩ = 2 := rfl
 
 #check Finset.card
 
 #eval (range 5).card
 
-example (s : Finset ℕ) : s.card = #s := by rfl
+example (s : Finset ℕ) : s.card = #s := rfl
 
 example (s : Finset ℕ) : s.card = ∑ _i ∈ s, 1 := by rw [card_eq_sum_ones]
 
@@ -295,13 +313,16 @@ example : ∀ x : α, x ∈ Finset.univ := by
 example : Fintype.card α = (Finset.univ : Finset α).card := rfl
 end
 
-example : Fintype.card (Fin 5) = 5 := by simp
-example : Fintype.card ((Fin 5) × (Fin 3)) = 15 := by simp
+example : Fintype.card (Fin 5) = 5 := rfl
+example : Fintype.card (Fin 5 × Fin 3) = 15 := rfl
 
 section
 variable (s : Finset ℕ)
 
 example : (↑s : Type) = {x : ℕ // x ∈ s} := rfl
 example : Fintype.card ↑s = s.card := by simp
-end
 
+example : (s : Type) = {x : ℕ // x ∈ s} := rfl
+example : Fintype.card s = s.card := by simp
+
+end
