@@ -1,6 +1,4 @@
 import MIL.Common
-import Mathlib.Algebra.BigOperators.Ring.List
-import Mathlib.Data.Real.Basic
 
 set_option autoImplicit true
 
