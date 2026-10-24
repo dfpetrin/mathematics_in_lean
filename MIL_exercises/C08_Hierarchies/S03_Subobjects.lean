@@ -52,6 +52,34 @@ instance [Monoid M] : SubmonoidClass₁ (Submonoid₁ M) M where
   one_mem := Submonoid₁.one_mem
 
 
+@[ext]
+structure Subgroup₁ (G : Type) [Group G] extends Submonoid₁ G where
+  /-- The inverse of an element of a subgroup belongs to the subgroup. -/
+  inv_mem {a} : a ∈ carrier → a⁻¹ ∈ carrier
+
+/-- Subgroups in `G` can be seen as sets in `G`. -/
+instance [Group G] : SetLike (Subgroup₁ G) G where
+  coe := (·.carrier)
+  coe_injective _ _ := Subgroup₁.ext
+
+instance [Group G] : SubmonoidClass₁ (Subgroup₁ G) G where
+  mul_mem := (·.mul_mem)
+  one_mem := (·.one_mem)
+
+instance Subgroup₁Group [Group G] (H : Subgroup₁ G) : Group H :=
+{ SubMonoid₁Monoid H.toSubmonoid₁ with
+  inv := fun ⟨x, hx⟩ ↦ ⟨x⁻¹, H.inv_mem hx⟩
+  inv_mul_cancel := fun ⟨x, _⟩ ↦ SetCoe.ext (inv_mul_cancel x) }
+
+class SubgroupClass₁ (S : Type) (G : Type) [Group G] [SetLike S G] : Prop
+    extends SubmonoidClass₁ S G where
+  inv_mem : ∀ (s : S) {a : G}, a ∈ s → a⁻¹ ∈ s
+
+instance [Group G] : SubgroupClass₁ (Subgroup₁ G) G :=
+  { (inferInstance : SubmonoidClass₁ (Subgroup₁ G) G) with
+    inv_mem := Subgroup₁.inv_mem }
+
+
 instance [Monoid M] : Min (Submonoid₁ M) :=
   ⟨fun S₁ S₂ ↦
     { carrier := S₁ ∩ S₂
@@ -68,8 +96,16 @@ def Submonoid.Setoid [CommMonoid M] (N : Submonoid M) : Setoid M  where
     refl := fun x ↦ ⟨1, N.one_mem, 1, N.one_mem, rfl⟩
     symm := fun ⟨w, hw, z, hz, h⟩ ↦ ⟨z, hz, w, hw, h.symm⟩
     trans := by
-      sorry
-  }
+      intro x y z ⟨v, hv, w, hw, h⟩ ⟨v', hv', w', hw', h'⟩
+      use v * v', N.mul_mem hv hv'
+      use w * w', N.mul_mem hw hw'
+      calc  x * (v * v')
+          = x * v * v' := by rw [mul_assoc]
+        _ = y * w * v' := by rw [h]
+        _ = w * (y * v') := by rw [mul_comm y, mul_assoc]
+        _ = w * (z * w') := by rw [h']
+        _ = z * (w * w') := by rw [← mul_assoc, mul_comm w, mul_assoc]
+}
 
 instance [CommMonoid M] : HasQuotient M (Submonoid M) where
   Quotient := fun N ↦ Quotient N.Setoid
@@ -78,12 +114,19 @@ def QuotientMonoid.mk [CommMonoid M] (N : Submonoid M) : M → M ⧸ N := Quotie
 
 instance [CommMonoid M] (N : Submonoid M) : Monoid (M ⧸ N) where
   mul := Quotient.map₂ (· * ·) (by
-      sorry
-        )
+      intro a₁ a₂ ⟨w, hw, z, hz, h⟩ b₁ b₂ ⟨w', hw', z', hz', h'⟩
+      use w * w', N.mul_mem hw hw'
+      use z * z', N.mul_mem hz hz'
+      calc  (a₁ * b₁) * (w  * w')
+          = (a₁ * w ) * (b₁ * w') := by rw [mul_assoc, ← mul_assoc b₁, mul_comm b₁, mul_assoc, ← mul_assoc]
+        _ = (a₂ * z ) * (b₂ * z') := by rw [h, h']
+        _ = (a₂ * b₂) * (z  * z') := by rw [mul_assoc, ← mul_assoc z, mul_comm z, mul_assoc, ← mul_assoc]
+    )
   mul_assoc := by
-      sorry
+    rintro ⟨a⟩ ⟨b⟩ ⟨c⟩
+    apply Quotient.sound
+    dsimp only
+    rw [mul_assoc]
   one := QuotientMonoid.mk N 1
-  one_mul := by
-      sorry
-  mul_one := by
-      sorry
+  one_mul := by rintro ⟨a⟩; apply Quotient.sound; dsimp only; rw [one_mul]
+  mul_one := by rintro ⟨a⟩; apply Quotient.sound; dsimp only; rw [mul_one]
