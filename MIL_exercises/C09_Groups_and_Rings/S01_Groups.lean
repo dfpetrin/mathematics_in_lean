@@ -85,13 +85,18 @@ def conjugate {G : Type*} [Group G] (x : G) (H : Subgroup G) : Subgroup G where
   carrier := {a : G | ∃ h, h ∈ H ∧ a = x * h * x⁻¹}
   one_mem' := by
     dsimp
-    sorry
+    use 1, H.one_mem
+    group
   inv_mem' := by
     dsimp
-    sorry
+    rintro - ⟨h, h_in, rfl⟩
+    use h⁻¹, H.inv_mem h_in
+    group
   mul_mem' := by
     dsimp
-    sorry
+    rintro - - ⟨h, h_in, rfl⟩ ⟨k, k_in, rfl⟩
+    use h * k, H.mul_mem h_in k_in
+    group
 
 example {G H : Type*} [Group G] [Group H] (G' : Subgroup G) (f : G →* H) : Subgroup H :=
   Subgroup.map f G'
@@ -116,57 +121,81 @@ variable {G H : Type*} [Group G] [Group H]
 open Subgroup
 
 example (φ : G →* H) (S T : Subgroup H) (hST : S ≤ T) : comap φ S ≤ comap φ T := by
-  sorry
+  intro x hx
+  exact hST hx
 
 example (φ : G →* H) (S T : Subgroup G) (hST : S ≤ T) : map φ S ≤ map φ T := by
-  sorry
+  rintro - ⟨x, hx, rfl⟩
+  use x, hST hx
 
 variable {K : Type*} [Group K]
 
 -- Remember you can use the `ext` tactic to prove an equality of subgroups.
 example (φ : G →* H) (ψ : H →* K) (U : Subgroup K) :
     comap (ψ.comp φ) U = comap φ (comap ψ U) := by
-  sorry
+  ext; rfl
 
 -- Pushing a subgroup along one homomorphism and then another is equal to
 -- pushing it forward along the composite of the homomorphisms.
 example (φ : G →* H) (ψ : H →* K) (S : Subgroup G) :
     map (ψ.comp φ) S = map ψ (S.map φ) := by
-  sorry
+  ext k
+  simp only [mem_map]
+  constructor
+  · rintro ⟨s, hs, rfl⟩
+    use φ s, ⟨s, hs, rfl⟩
+    rfl
+  · rintro ⟨-, ⟨s, hs, rfl⟩, rfl⟩
+    use s, hs
+    rfl
 
 end exercises
 
-open scoped Classical
-
-
 example {G : Type*} [Group G] (G' : Subgroup G) : Nat.card G' ∣ Nat.card G :=
   ⟨G'.index, mul_comm G'.index _ ▸ G'.index_mul_card.symm⟩
-
-open Subgroup
 
 example {G : Type*} [Group G] [Finite G] (p : ℕ) {n : ℕ} [Fact p.Prime]
     (hdvd : p ^ n ∣ Nat.card G) : ∃ K : Subgroup G, Nat.card K = p ^ n :=
   Sylow.exists_subgroup_card_pow_prime p hdvd
 
+section
+open Subgroup
+
 lemma eq_bot_iff_card {G : Type*} [Group G] {H : Subgroup G} :
     H = ⊥ ↔ Nat.card H = 1 := by
   suffices (∀ x ∈ H, x = 1) ↔ ∃ x ∈ H, ∀ a ∈ H, a = x by
-    simpa [eq_bot_iff_forall, Nat.card_eq_one_iff_exists]
-  sorry
+    simp [eq_bot_iff_forall]
+  constructor
+  · intro h
+    use 1, H.one_mem
+  · intro ⟨x, h_in, hx⟩ a ha
+    calc  a
+        = x := hx a ha
+      _ = 1 := hx 1 H.one_mem |>.symm
 
 #check card_dvd_of_le
 
 lemma inf_bot_of_coprime {G : Type*} [Group G] (H K : Subgroup G)
     (h : (Nat.card H).Coprime (Nat.card K)) : H ⊓ K = ⊥ := by
-  sorry
+  rw [_root_.eq_bot_iff_card]
+  apply Nat.eq_one_of_dvd_coprimes h <;> apply card_dvd_of_le
+  · apply inf_le_left
+  · apply inf_le_right
+
+end
+
+section
 open Equiv
 
 example {X : Type*} [Finite X] : Subgroup.closure {σ : Perm X | Perm.IsCycle σ} = ⊤ :=
   Perm.closure_isCycle
 
-#simp [mul_assoc] c[1, 2, 3] * c[2, 3, 4]
+end
+
+#eval c[(1 : Fin 5), 2, 3] * c[2, 3, 4] -- (1 2) (3 4)
 
 section FreeGroup
+open Equiv
 
 inductive S | a | b | c
 
@@ -196,6 +225,7 @@ def myNewMorphism : myGroup →* Perm (Fin 5) := PresentedGroup.toGroup compat_m
 end FreeGroup
 
 noncomputable section GroupActions
+open Subgroup
 
 example {G X : Type*} [Group G] [MulAction G X] (g g': G) (x : X) :
     g • (g' • x) = (g * g') • x :=
@@ -227,14 +257,15 @@ example {G : Type*} [Group G] (H : Subgroup G) : G ≃ (G ⧸ H) × H :=
 variable {G : Type*} [Group G]
 
 lemma conjugate_one (H : Subgroup G) : conjugate 1 H = H := by
-  sorry
+  ext; simp [conjugate]
 
 instance : MulAction G (Subgroup G) where
   smul := conjugate
-  one_smul := by
-    sorry
+  one_smul := conjugate_one
   mul_smul := by
-    sorry
+    intros
+    ext
+    simp [HSMul.hSMul, conjugate, mul_assoc]
 
 end GroupActions
 
@@ -261,7 +292,9 @@ example {G G': Type*} [Group G] [Group G']
 example {G : Type*} [Group G] {M N : Subgroup G} [M.Normal]
     [N.Normal] (h : M = N) : G ⧸ M ≃* G ⧸ N := QuotientGroup.quotientMulEquivOfEq h
 
-section
+end QuotientGroup
+
+noncomputable section
 variable {G : Type*} [Group G] {H K : Subgroup G}
 
 open MonoidHom
@@ -273,20 +306,49 @@ open MonoidHom
 
 lemma aux_card_eq [Finite G] (h' : Nat.card G = Nat.card H * Nat.card K) :
     Nat.card (G ⧸ H) = Nat.card K := by
-  sorry
+  have := calc
+        Nat.card (G ⧸ H) * Nat.card H
+    _ = Nat.card G := by rw [← H.index_eq_card, H.index_mul_card]
+    _ = Nat.card K * Nat.card H := by rw [h', mul_comm]
+  exact Nat.eq_of_mul_eq_mul_right Nat.card_pos this
+
 variable [H.Normal] [K.Normal] [Fintype G] (h : Disjoint H K)
   (h' : Nat.card G = Nat.card H * Nat.card K)
 
 #check Nat.bijective_iff_injective_and_card
 #check ker_eq_bot_iff
-#check restrict
-#check ker_restrict
+#check domRestrict
+#check ker_domRestrict
 
 def iso₁ : K ≃* G ⧸ H := by
-  sorry
+  let φ : G →* G ⧸ H := QuotientGroup.mk' H
+  let φ' : K →* G ⧸ H := φ.domRestrict K
+  apply MulEquiv.ofBijective φ'
+  rw [Nat.bijective_iff_injective_and_card]
+  constructor
+  · rw [← ker_eq_bot_iff, φ.ker_domRestrict K]
+    simp [φ, h]
+  · symm
+    exact aux_card_eq h'
+
 def iso₂ : G ≃* (G ⧸ K) × (G ⧸ H) := by
-  sorry
+  let φₕ : G →* G ⧸ H := QuotientGroup.mk' H
+  let φₖ : G →* G ⧸ K := QuotientGroup.mk' K
+  let φ := φₖ.prod φₕ
+  apply MulEquiv.ofBijective φ
+  rw [Nat.bijective_iff_injective_and_card]
+  constructor
+  · rw [← ker_eq_bot_iff, ker_prod]
+    simp [φₖ, φₕ, h.symm.eq_bot]
+  · rw [Nat.card_prod]
+    rw [aux_card_eq h', aux_card_eq (mul_comm (Nat.card H) _ ▸ h'), ← h']
+
 #check MulEquiv.prodCongr
 
-def finalIso : G ≃* H × K :=
-  sorry
+def finalIso : G ≃* H × K := by
+  apply (iso₂ h h').trans
+  let KGH : K ≃* G ⧸ H := iso₁ h h'
+  let HGK : H ≃* G ⧸ K := iso₁ h.symm (mul_comm (Nat.card H) _ ▸ h')
+  exact (HGK.prodCongr KGH).symm
+
+end
