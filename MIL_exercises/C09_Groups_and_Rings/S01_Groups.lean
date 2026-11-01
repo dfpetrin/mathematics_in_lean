@@ -1,4 +1,3 @@
-import Mathlib.GroupTheory.Sylow
 import Mathlib.GroupTheory.Perm.Cycle.Concrete
 import Mathlib.GroupTheory.Perm.Subgroup
 import Mathlib.GroupTheory.PresentedGroup
